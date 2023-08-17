@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JS Muistipeli</title>
+        <meta name="description" content="Muistipeli tehty Javascriptilla">
+    </head>
+    <style>
+        body {
+            background-color: darkgreen;
+        }
+
+        .recessDiv {
+            background-color: green;
+            border-radius: 10px;
+            margin: 1%;
+            height: 95vh;
+        }
+        .card {
+            height: 17vmin;
+            width: 13vmin;
+            border-radius: 5px;
+            padding: 3px;
+        }
+        .card:hover {
+            background-color: purple;
+            opacity: 80%;
+            cursor: grab;
+        }
+        #cards {
+            display: grid;
+            grid-template-columns: auto auto auto auto;
+            row-gap: 30px;
+            padding:50px 100px;
+        }
+        #cards>div {
+            justify-self: center;
+        }
+    </style>
+
+    <body onclick="handleClickEvent(this);">
+        <div class="recessDiv">
+            <div id="cards">
+            </div>
+        </div>
+    </body>
+
+    <script>
+        const card_image_location = 'Cards/';
+        const card_back_face = 'Back.png';
+        const number_of_cards = 16;
+        let pairs_found = 0;
+
+        let cardValues = [
+            'SK', 'SK',
+            'HK', 'HK',
+            'CK', 'CK',
+            'DK', 'DK',
+            'SQ', 'SQ',
+            'HQ', 'HQ',
+            'CQ', 'CQ',
+            'DQ', 'DQ'
+        ]
+
+        let tempCard = null;
+
+        // generates 16 cards with random values from cardValues[]
+        for (let i = 0; i < number_of_cards; i++) {
+            let newDiv = document.createElement('div');
+            let newCard = document.createElement('img');
+
+            let randomIndex = Math.floor(Math.random() * cardValues.length);
+
+            newCard.setAttribute('class', 'card');
+            newCard.setAttribute('onclick', 'handleClickEvent(this);')
+            newCard.setAttribute('value', cardValues[randomIndex])
+            newCard.setAttribute('src', card_image_location + card_back_face);
+
+            cardValues.splice(randomIndex, 1); // removes used value from cardValues[]
+
+            newDiv.appendChild(newCard);
+            document.getElementById('cards').appendChild(newDiv);
+        }
+
+        /*
+        Normally function gets ran twice when clicking a card, because onClick registers both card and 
+        background.
+        Function triggered by a card onClick event runs first.
+
+        Problem: Each time a card is clicked, the card's onClick sets tempCard value to that card,
+            but also the background's onClick resets the value right after.
+        Current solution: only allow background's condition to run if cardWasClicked is false.
+            Therefore set cardWasClicked to true when card's condition runs and set to false
+            after background's condition checks the variable.
+        */
+        let cardWasClicked = false; // prevents function from running twice
+        async function handleClickEvent(clickedElement) {
+            if (clickedElement.nodeName == 'IMG' && 
+            clickedElement.getAttribute('src') == card_image_location + card_back_face) { // card was clicked and back side was up
+                
+                cardWasClicked = true;
+                flipCard(clickedElement); // turns card's face up
+
+                if (tempCard == null) { // if this is the first card
+                    tempCard = clickedElement;
+                } 
+                else { // this is the 2nd card
+                    if (clickedElement.getAttribute('value') == tempCard.getAttribute('value')) { // checks for a match, eg. SK & SK
+                        // alert('found a pair');
+                        pairs_found++;
+
+                        /*
+                        ------------------
+                        ADD GAME END STUFF
+                        ------------------
+                        */
+                        if (pairs_found == number_of_cards / 2) {
+                            setTimeout(() => { // gives time for the last card to flip before ending the game.
+                                alert('Game over. You found all pairs.\nRefresh page to play again.');
+                            }, 500);
+                        }
+                    }
+                    else { // cards were not a match
+                        // flips cards back after timeout
+                        await sleep(1000);
+                        flipCard(clickedElement);
+                        flipCard(tempCard);
+                    }
+                    tempCard = null;
+                }
+                return;
+            }
+            else if (!cardWasClicked) { // background was clicked; clear selections
+                if (tempCard != null) {
+                    flipCard(tempCard); // flips card back
+                    tempCard = null;
+                }
+            }
+            cardWasClicked = false;
+        }
+
+        // flips the opposite side of given card to the top
+        function flipCard(cardElement) {
+            let pathToBackFace = card_image_location + card_back_face;
+            let pathToCardFace = card_image_location + cardElement.getAttribute('value') + '.png';
+
+            cardElement.setAttribute('src', 
+            cardElement.getAttribute('src') == pathToBackFace ? pathToCardFace : pathToBackFace);
+        }
+
+        // idk how this works
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</html>
